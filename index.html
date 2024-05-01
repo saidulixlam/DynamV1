@@ -1,0 +1,121 @@
+<html lang="en">
+
+<head>
+    <title>Hello World</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="Resources/dynamsoft.webtwain.initiate.js"></script>
+    <script src="Resources/dynamsoft.webtwain.config.js"></script>
+</head>
+
+<body>
+    <div class="p-6 md:flex md:justify-between md:gap-4 ">
+        <div class="md:w-1/2 mt-6">
+            <div id="dwtcontrolContainer" class="rounded-md"></div>
+        </div>
+        <div class="right md:w-1/2 px-4">
+            <div class="mt-6">
+                <label for="showUICheckbox">Show UI : </label>
+                <input type="checkbox" id="showUICheckbox">
+            </div>
+            <div class="my-2">
+                <label for="autoFeederCheckbox">AutoFeeder : </label>
+                <input type="checkbox" id="autoFeederCheckbox">
+            </div>
+            <div class="my-2">
+                <label for="pixelTypeRadio">PixelType : </label><br>
+                <input type="radio" id="blackWhiteRadio" name="pixelType" value="BlackWhite">
+                <label for="blackWhiteRadio">Black & White</label><br>
+                <input type="radio" id="grayRadio" name="pixelType" value="Gray">
+                <label for="grayRadio">Gray</label><br>
+                <input type="radio" id="colorRadio" name="pixelType" value="Color">
+                <label for="colorRadio">Color</label>
+            </div>
+            <div>
+                <label for="resolutionSelect">Resolution : </label>
+                <select id="resolutionSelect" class="bg-gray-200 rounded-md p-1">
+                    <option value="100">100 DPI</option>
+                    <option value="200">200 DPI</option>
+                    <option value="300">300 DPI</option>
+                </select>
+            </div>
+            <div class="p-1 flex flex-col gap-4">
+                <button class="my-4 w-2/3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="AcquireAndSaveMultiPagePDF()">Scan & Save1</button>
+                <button class="w-2/3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="AcquireAndSaveIndividualPDFs()">Scan & Save2</button>
+                <button class="my-4 w-2/3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="removeBlankImages()">Remove Blank Images</button>
+                <button class="w-2/3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="removeAllImages()">Remove All</button>
+            </div>
+            
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var DWObject;
+
+        function Dynamsoft_OnReady() {
+            DWObject = Dynamsoft.DWT.GetWebTwain("dwtcontrolContainer");
+        }
+
+        function AcquireAndSaveMultiPagePDF() {
+            AcquireAndSavePDF(true);
+        }
+
+        function AcquireAndSaveIndividualPDFs() {
+            AcquireAndSavePDF(false);
+        }
+
+        function AcquireAndSavePDF(isMultiPage) {
+            if (DWObject) {
+                DWObject.IfShowUI = document.getElementById("showUICheckbox").checked;
+                DWObject.IfAutoFeed = document.getElementById("autoFeederCheckbox").checked;
+
+                var pixelTypeRadios = document.getElementsByName("pixelType");
+                var selectedPixelType;
+                for (var i = 0; i < pixelTypeRadios.length; i++) {
+                    if (pixelTypeRadios[i].checked) {
+                        selectedPixelType = pixelTypeRadios[i].value;
+                        break;
+                    }
+                }
+                DWObject.PixelType = selectedPixelType;
+
+                var resolutionSelect = document.getElementById("resolutionSelect");
+                DWObject.Resolution = parseInt(resolutionSelect.value);
+
+                DWObject.SelectSourceAsync().then(function () {
+                    return DWObject.AcquireImageAsync();
+                }).then(function () {
+                    if (isMultiPage) {
+                        return DWObject.SaveAllAsPDF("D:\\temp\\result.pdf");
+                    } else {
+                        for (var i = 0; i < DWObject.HowManyImagesInBuffer; i++) {
+                            var fileName = "D:\\temp\\Image_" + (i + 1) + ".pdf";
+                            DWObject.SaveAllAsPDF(i, fileName);
+                        }
+                    }
+                }).catch(function (exp) {
+                    alert(exp.message);
+                });
+            }
+        }
+        function removeBlankImages() {
+            if (DWObject) {
+                var numImages = DWObject.HowManyImagesInBuffer;
+                for (var i = 0; i < numImages; i++) {
+                    DWObject.CurrentImageIndexInBuffer = i;
+                    if (DWObject.GetSelectedImagesSize(Dynamsoft.DWT.EnumDWT_ImageType.IT_BMP) == 0) {
+                        DWObject.RemoveAllSelectedImages();
+                        i--;
+                        numImages--;
+                    }
+                }
+            }
+        }
+
+        function removeAllImages() {
+            if (DWObject) {
+                DWObject.RemoveAllImages();
+            }
+        }
+    </script>
+</body>
+</html>
