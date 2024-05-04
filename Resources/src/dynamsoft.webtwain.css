@@ -37,7 +37,7 @@
 }
 
 .dynamsoft-progressBar {
-    -webkit-appearance: none;
+    /* -webkit-appearance: none; */
     width: 100%;
     margin-bottom: 20px;
     height: 14px;
